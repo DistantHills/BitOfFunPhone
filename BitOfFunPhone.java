@@ -52,11 +52,10 @@ public class BitOfFunPhone{
             // of response, rather than streaming from file 
             // each time
             setupAudio();
-            addActionListener(this);
-            
+            addActionListener(this);            
         }
 
-        // Called when something happens to a button, but No Op at the moment
+        // Called when something happens to this button
         public void actionPerformed(ActionEvent e) {
             System.out.println("Something happened");
             // Make sure we always play from the start
@@ -167,10 +166,12 @@ public class BitOfFunPhone{
         dialPadPanel.add(new DialPadButton(0));
         
         totalPhonePanel.add(dialPadPanel);
+        totalPhonePanel.setOpaque(true);
+        return totalPhonePanel;
+    }
 
 
     private static void createAndShowGUI() {
-
         JFrame.setDefaultLookAndFeelDecorated(true);
         JFrame frame = new JFrame("Bit Of Fun Phone");
 
@@ -179,7 +180,7 @@ public class BitOfFunPhone{
         frame.setContentPane(myPhone.createContentPane());
 
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        frame.setSize(280, 190);
+        frame.setSize(250, 300);
         frame.setVisible(true);
     }
 
