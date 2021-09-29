@@ -39,13 +39,13 @@ public class BitOfFunPhone{
     // having it as a property
     ///////////////////////////////////////////////////
     class DialPadButton extends JButton implements  ActionListener, LineListener{
-        private Integer buttonDigit;
-        private Clip audioClip;
+        private Integer mButtonDigit;
+        private Clip mAudioClip;
         boolean playCompleted;
         
         public DialPadButton(Integer newButtonDigit) {
             super(Integer.toString(newButtonDigit));
-            buttonDigit = newButtonDigit;
+            mButtonDigit = newButtonDigit;
             
             // Load the audio clip.  We assume these
             // will be short/small, so pre-load for speed
@@ -59,6 +59,21 @@ public class BitOfFunPhone{
         // Called when something happens to a button, but No Op at the moment
         public void actionPerformed(ActionEvent e) {
             System.out.println("Something happened");
+            // Make sure we always play from the start
+            mAudioClip.setFramePosition(0);
+            mAudioClip.start();
+             
+            while (!playCompleted) {
+                // wait for the playback completes
+                try {
+                    Thread.sleep(1000);
+                } catch (InterruptedException ex) {
+                    ex.printStackTrace();
+                }
+            }
+             
+           // Don't close until finished @@ for now.  How to close on shutdown??
+//           mAudioClip.close();
         }
         
         // Method to load the audio clip for this button
@@ -71,7 +86,7 @@ public class BitOfFunPhone{
             // Find a *.wav file with a <thisDigit>_ prefix
             System.out.println("@@ setupAudio");
             File soundDirectory = new File("Sounds-numbers");        
-            String namePrefix = Integer.toString(buttonDigit) + "_";
+            String namePrefix = Integer.toString(mButtonDigit) + "_";
             FilenameFilter filter = new FilenameFilter() {
                     @Override
                     public boolean accept(File f, String name) {
@@ -91,32 +106,15 @@ public class BitOfFunPhone{
             // @@@ testing.  For moment play on creation.  Later play on button press
             try {
                 AudioInputStream audioStream = AudioSystem.getAudioInputStream(audioFile);
-     
                 AudioFormat format = audioStream.getFormat();
-     
-                DataLine.Info info = new DataLine.Info(Clip.class, format);
-     
-                Clip audioClip = (Clip) AudioSystem.getLine(info);
+                DataLine.Info info = new DataLine.Info(Clip.class, format);     
+                mAudioClip = (Clip) AudioSystem.getLine(info);
      
      // @@@ currently don't care when audio finishes
-                audioClip.addLineListener(this);
-     
-                audioClip.open(audioStream);
+                mAudioClip.addLineListener(this);
+                mAudioClip.open(audioStream);
                  
                 System.out.println("Ready to start clip");
-                audioClip.start();
-                 
-                while (!playCompleted) {
-                    // wait for the playback completes
-                    try {
-                        Thread.sleep(1000);
-                    } catch (InterruptedException ex) {
-                        ex.printStackTrace();
-                    }
-                }
-                 
-               // Don't close until finished @@ for now
-               audioClip.close();
                  
             } catch (UnsupportedAudioFileException ex) {
                 System.out.println("The specified audio file is not supported.");
@@ -130,32 +128,24 @@ public class BitOfFunPhone{
             }
         }
 
-    /**
-     * Listens to the START and STOP events of the audio line.
-     // @@@ May move to inner class as part of button press
-     */
-    @Override
-    public void update(LineEvent event) {
-        LineEvent.Type type = event.getType();
-         
-        if (type == LineEvent.Type.START) {
-            System.out.println("Playback started.");
+        /**
+         * Listens to the START and STOP events of the audio line.
+         // @@@ May move to inner class as part of button press
+         */
+        @Override
+        public void update(LineEvent event) {
+            LineEvent.Type type = event.getType();
              
-        } else if (type == LineEvent.Type.STOP) {
-            playCompleted = true;
-            System.out.println("Playback completed.");
-        } 
+            if (type == LineEvent.Type.START) {
+                System.out.println("Playback started.");
+                 
+            } else if (type == LineEvent.Type.STOP) {
+                playCompleted = true;
+                System.out.println("Playback completed.");
+            } 
+        }
     }
 
-    }
-
-    // Definition of global values and items that are part of the GUI.
-    // int redScoreAmount = 0;
-    // int blueScoreAmount = 0;
-
-    // JPanel titlePanel, scorePanel, buttonPanel;
-    // JLabel redLabel, blueLabel, redScore, blueScore;
-    // JButton redButton, blueButton, resetButton;
 
     public JPanel createContentPane (){
 
@@ -170,7 +160,7 @@ public class BitOfFunPhone{
         dialPadPanel.setLayout(new GridLayout(4,3,10,10));
         dialPadPanel.setSize(500,500);
         
-        for (int ii = 1; ii <= 2; ii++){
+        for (int ii = 1; ii <= 9; ii++){
             dialPadPanel.add(new DialPadButton(ii));
         }
         
@@ -178,53 +168,6 @@ public class BitOfFunPhone{
         
         totalPhonePanel.add(dialPadPanel);
 
-        
-        // buttonPanel = new JPanel();
-        // buttonPanel.setLayout(null);
-        // buttonPanel.setLocation(10, 80);
-        // buttonPanel.setSize(260, 70);
-        // totalGUI.add(buttonPanel);
-
-        // // We create a button and manipulate it using the syntax we have
-        // // used before. Now each button has an ActionListener which posts 
-        // // its action out when the button is pressed.
-        // redButton = new JButton("Red Score!");
-        // redButton.setLocation(0, 0);
-        // redButton.setSize(120, 30);
-        // redButton.addActionListener(this);
-        // buttonPanel.add(redButton);
-
-        
-        totalPhonePanel.setOpaque(true);
-        return totalPhonePanel;
-    }
-
-    // Called when somethig happens to a button, but No Op at the moment
-    public void actionPerformed(ActionEvent e) {
-    }
-    // // This is the new ActionPerformed Method.
-    // // It catches any events with an ActionListener attached.
-    // // Using an if statement, we can determine which button was pressed
-    // // and change the appropriate values in our GUI.
-    // public void actionPerformed(ActionEvent e) {
-        // if(e.getSource() == redButton)
-        // {
-            // redScoreAmount = redScoreAmount + 1;
-            // redScore.setText(""+redScoreAmount);
-        // }
-        // else if(e.getSource() == blueButton)
-        // {
-            // blueScoreAmount = blueScoreAmount + 1;
-            // blueScore.setText(""+blueScoreAmount);
-        // }
-        // else if(e.getSource() == resetButton)
-        // {
-            // redScoreAmount = 0;
-            // blueScoreAmount = 0;
-            // redScore.setText(""+redScoreAmount);
-            // blueScore.setText(""+blueScoreAmount);
-        // }
-    // }
 
     private static void createAndShowGUI() {
 
@@ -240,28 +183,7 @@ public class BitOfFunPhone{
         frame.setVisible(true);
     }
 
-    public static void main(String[] args) {
-        // @@@ temp testing
-        // String[] pathnames;
-        // File soundDirectory = new File("Sounds-numbers");        
-        // String sample = "2_";
-        // FilenameFilter filter = new FilenameFilter() {
-                // @Override
-                // public boolean accept(File f, String name) {
-// //                    return (name.endsWith(".wav") && (name.startsWith("1_")));
-                    // return (name.endsWith(".wav") && (name.startsWith(sample)));
-                // }
-            // };
-
-        // // This is how to apply the filter
-        // pathnames = soundDirectory.list(filter);
-
-        // // For each pathname in the pathnames array
-        // for (String pathname : pathnames) {
-            // // Print the names of files and directories
-            // System.out.println(pathname);        
-        // }
-        
+    public static void main(String[] args) {        
         //Schedule a job for the event-dispatching thread:
         //creating and showing this application's GUI.
         SwingUtilities.invokeLater(new Runnable() {
