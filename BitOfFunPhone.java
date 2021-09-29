@@ -1,73 +1,167 @@
+// BitOfFunPhone
+//
+// Brushing the dust off my Java
+// Simple GUI app to mimic a phone - dialpad that plays 
+// sounds when you press the keys
+// All sound from https://freesound.org/ 
+// V1 Sep 2021 - Mastered on GitHub
+
+//package FunJava;
+
 import javax.swing.*;
 import java.awt.*;
 import java.awt.Color;
 import java.awt.event.ActionListener;
 import java.awt.event.ActionEvent;
+import java.io.*;
 
-public class BitOfFunPhone implements  ActionListener{
+// @@@ Clean these out once working
+import javax.sound.sampled.AudioFormat;
+import javax.sound.sampled.AudioInputStream;
+import javax.sound.sampled.AudioSystem;
+import javax.sound.sampled.Clip;
+import javax.sound.sampled.DataLine;
+import javax.sound.sampled.LineEvent;
+import javax.sound.sampled.LineListener;
+import javax.sound.sampled.LineUnavailableException;
+import javax.sound.sampled.UnsupportedAudioFileException;
 
-    // // We will have 10 very similar dial pad buttons
-    // // so create a class, so we can listen to
-    // // each button separately
-    // class DialPadButton implements  ActionListener{
-        // // Called when somethig happens to a button, but No Op at the moment
-        // public void actionPerformed(ActionEvent e) {
-        // }
-    // }
+public class BitOfFunPhone{
+    ///////////////////////////////////////////////////
+    // Global class variables
+
+    ///////////////////////////////////////////////////
+    // DialPadButton class
+    // We will have 10 very similar dial pad buttons
+    // so create a class, so we can listen to
+    // each button separately
+    // """ Note to self - could potentially extend JButton, rather than
+    // having it as a property
+    ///////////////////////////////////////////////////
+    class DialPadButton extends JButton implements  ActionListener, LineListener{
+        private Integer buttonDigit;
+        private Clip audioClip;
+        boolean playCompleted;
+        
+        public DialPadButton(Integer newButtonDigit) {
+            super(Integer.toString(newButtonDigit));
+            buttonDigit = newButtonDigit;
+            
+            // Load the audio clip.  We assume these
+            // will be short/small, so pre-load for speed
+            // of response, rather than streaming from file 
+            // each time
+            setupAudio();
+            addActionListener(this);
+            
+        }
+
+        // Called when something happens to a button, but No Op at the moment
+        public void actionPerformed(ActionEvent e) {
+            System.out.println("Something happened");
+        }
+        
+        // Method to load the audio clip for this button
+        private void setupAudio() {
+            String[] fileNames;
+            String wavFileName;
+            // This should be defined globally, for easier editing
+            String soundDirName = "Sounds-numbers";
+                
+            // Find a *.wav file with a <thisDigit>_ prefix
+            System.out.println("@@ setupAudio");
+            File soundDirectory = new File("Sounds-numbers");        
+            String namePrefix = Integer.toString(buttonDigit) + "_";
+            FilenameFilter filter = new FilenameFilter() {
+                    @Override
+                    public boolean accept(File f, String name) {
+                        return (name.endsWith(".wav") && (name.startsWith(namePrefix)));
+                    }
+                };
+
+            // There should 1, and only 1, audio file with the appropriate prefix.  
+            // Ideally put more error handling in here, since we're dealing with external files
+            fileNames = soundDirectory.list(filter);
+            wavFileName = fileNames[0];
+            System.out.println(wavFileName);
+            
+            // Windows-specific.  This should be updated so it's OS-independent
+            File audioFile = new File(soundDirName + "/" + wavFileName);
+     
+            // @@@ testing.  For moment play on creation.  Later play on button press
+            try {
+                AudioInputStream audioStream = AudioSystem.getAudioInputStream(audioFile);
+     
+                AudioFormat format = audioStream.getFormat();
+     
+                DataLine.Info info = new DataLine.Info(Clip.class, format);
+     
+                Clip audioClip = (Clip) AudioSystem.getLine(info);
+     
+     // @@@ currently don't care when audio finishes
+                audioClip.addLineListener(this);
+     
+                audioClip.open(audioStream);
+                 
+                System.out.println("Ready to start clip");
+                audioClip.start();
+                 
+                while (!playCompleted) {
+                    // wait for the playback completes
+                    try {
+                        Thread.sleep(1000);
+                    } catch (InterruptedException ex) {
+                        ex.printStackTrace();
+                    }
+                }
+                 
+               // Don't close until finished @@ for now
+               audioClip.close();
+                 
+            } catch (UnsupportedAudioFileException ex) {
+                System.out.println("The specified audio file is not supported.");
+                ex.printStackTrace();
+            } catch (LineUnavailableException ex) {
+                System.out.println("Audio line for playing back is unavailable.");
+                ex.printStackTrace();
+            } catch (IOException ex) {
+                System.out.println("Error playing the audio file.");
+                ex.printStackTrace();
+            }
+        }
+
+    /**
+     * Listens to the START and STOP events of the audio line.
+     // @@@ May move to inner class as part of button press
+     */
+    @Override
+    public void update(LineEvent event) {
+        LineEvent.Type type = event.getType();
+         
+        if (type == LineEvent.Type.START) {
+            System.out.println("Playback started.");
+             
+        } else if (type == LineEvent.Type.STOP) {
+            playCompleted = true;
+            System.out.println("Playback completed.");
+        } 
+    }
+
+    }
 
     // Definition of global values and items that are part of the GUI.
     // int redScoreAmount = 0;
     // int blueScoreAmount = 0;
 
-    JPanel titlePanel, scorePanel, buttonPanel;
-    JLabel redLabel, blueLabel, redScore, blueScore;
-    JButton redButton, blueButton, resetButton;
+    // JPanel titlePanel, scorePanel, buttonPanel;
+    // JLabel redLabel, blueLabel, redScore, blueScore;
+    // JButton redButton, blueButton, resetButton;
 
     public JPanel createContentPane (){
 
         // We create a bottom JPanel to place everything on.
         JPanel totalPhonePanel = new JPanel();
         totalPhonePanel.setLayout(null);
-
-        // // Creation of a Panel to contain the title labels
-        // titlePanel = new JPanel();
-        // titlePanel.setLayout(null);
-        // titlePanel.setLocation(10, 0);
-        // titlePanel.setSize(250, 30);
-        // totalGUI.add(titlePanel);
-
-        // redLabel = new JLabel("Red Team");
-        // redLabel.setLocation(0, 0);
-        // redLabel.setSize(120, 30);
-        // redLabel.setHorizontalAlignment(0);
-        // redLabel.setForeground(Color.red);
-        // titlePanel.add(redLabel);
-
-        // blueLabel = new JLabel("Blue Team");
-        // blueLabel.setLocation(130, 0);
-        // blueLabel.setSize(120, 30);
-        // blueLabel.setHorizontalAlignment(0);
-        // blueLabel.setForeground(Color.blue);
-        // titlePanel.add(blueLabel);
-
-        // // Creation of a Panel to contain the score labels.
-        // scorePanel = new JPanel();
-        // scorePanel.setLayout(null);
-        // scorePanel.setLocation(10, 40);
-        // scorePanel.setSize(260, 30);
-        // totalGUI.add(scorePanel);
-
-        // redScore = new JLabel(""+redScoreAmount);
-        // redScore.setLocation(0, 0);
-        // redScore.setSize(120, 30);
-        // redScore.setHorizontalAlignment(0);
-        // scorePanel.add(redScore);
-
-        // blueScore = new JLabel(""+blueScoreAmount);
-        // blueScore.setLocation(130, 0);
-        // blueScore.setSize(120, 30);
-        // blueScore.setHorizontalAlignment(0);
-        // scorePanel.add(blueScore);
 
         // Set up the dialpad with a similar layout to the 
         // dialpad on my phone, so 1->9 
@@ -76,17 +170,11 @@ public class BitOfFunPhone implements  ActionListener{
         dialPadPanel.setLayout(new GridLayout(4,3,10,10));
         dialPadPanel.setSize(500,500);
         
-        for (int i = 1; i <= 10; i++){
-            JButton dialButton;
-            if (i == 10) {
-                dialButton = new JButton("0");
-            }
-            else{
-                dialButton = new JButton(Integer.toString(i));
-            }
-//            dialButton.setSize(100,30);
-            dialPadPanel.add(dialButton);
+        for (int ii = 1; ii <= 2; ii++){
+            dialPadPanel.add(new DialPadButton(ii));
         }
+        
+        dialPadPanel.add(new DialPadButton(0));
         
         totalPhonePanel.add(dialPadPanel);
 
@@ -153,6 +241,27 @@ public class BitOfFunPhone implements  ActionListener{
     }
 
     public static void main(String[] args) {
+        // @@@ temp testing
+        // String[] pathnames;
+        // File soundDirectory = new File("Sounds-numbers");        
+        // String sample = "2_";
+        // FilenameFilter filter = new FilenameFilter() {
+                // @Override
+                // public boolean accept(File f, String name) {
+// //                    return (name.endsWith(".wav") && (name.startsWith("1_")));
+                    // return (name.endsWith(".wav") && (name.startsWith(sample)));
+                // }
+            // };
+
+        // // This is how to apply the filter
+        // pathnames = soundDirectory.list(filter);
+
+        // // For each pathname in the pathnames array
+        // for (String pathname : pathnames) {
+            // // Print the names of files and directories
+            // System.out.println(pathname);        
+        // }
+        
         //Schedule a job for the event-dispatching thread:
         //creating and showing this application's GUI.
         SwingUtilities.invokeLater(new Runnable() {
